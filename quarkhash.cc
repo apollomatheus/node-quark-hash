@@ -30,7 +30,7 @@ Handle<Value> Digest(const Arguments& args) {
     quark_hash(input, output);
 
     Buffer* buff = Buffer::New(output, 32);
-    return scope.Close(buff->handle_);
+    return scope.Close(buff->handle_,32);
 }
 
 void init(Handle<Object> exports) {
