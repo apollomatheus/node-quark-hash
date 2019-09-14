@@ -1,6 +1,14 @@
-#include <node/node.h>
-#include <node/node_buffer.h>
-#include <node/v8.h>
+#include <node.h>
+#include <node_buffer.h>
+#include <v8.h>
+
+#include <memory>
+
+#include <assert.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 extern "C" {
     #include "quark.h"
@@ -9,32 +17,41 @@ extern "C" {
 using namespace node;
 using namespace v8;
 
-Handle<Value> except(const char* msg) {
-    return ThrowException(Exception::Error(v8::String::New(msg)));
+
+void except(const char* msg) {
+    printf("Exception: %s\n",msg);
 }
 
-Handle<Value> Digest(const Arguments& args) {
-    HandleScope scope;
-
-    if (args.Length() < 1)
-        return except("You must provide one argument.");
-
+void Digest(const FunctionCallbackInfo<v8::Value>& args) {
+    Isolate* isolate = v8::Isolate::GetCurrent();
+    EscapableHandleScope scope(isolate);
+    if (args.Length() < 1) {
+        except("You must provide one argument.");
+        return;
+     }
     Local<Object> target = args[0]->ToObject();
 
-    if(!Buffer::HasInstance(target))
-        return except("Argument should be a buffer object.");
-
+    if(!Buffer::HasInstance(target)) {
+        except("Argument should be a buffer object.");
+        return;
+    }
     char * input = Buffer::Data(target);
     char * output = new char[32];
 
     quark_hash(input, output);
-
-    Buffer* buff = Buffer::New(output, 32);
-    return scope.Close(buff->handle_,32);
+//    scope.Escape(Buffer::Data(output);
+      args.GetReturnValue().Set(
+      v8::String::NewFromUtf8(args.GetIsolate(), output,
+                              v8::NewStringType::kNormal).ToLocalChecked());
 }
 
-void init(Handle<Object> exports) {
-    exports->Set(String::NewSymbol("digest"), FunctionTemplate::New(Digest)->GetFunction());
+Local<Context> CreateShellContext(const FunctionCallbackInfo<v8::Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
+  global->Set(
+      String::NewFromUtf8(isolate, "digest", NewStringType::kNormal)
+          .ToLocalChecked(),
+      FunctionTemplate::New(isolate, Digest));
 }
 
-NODE_MODULE(quarkhash, init)
+NODE_MODULE(quarkhash,CreateShellContext)
