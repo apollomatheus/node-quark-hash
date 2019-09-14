@@ -1,6 +1,6 @@
-#include <node.h>
-#include <node_buffer.h>
-#include <v8.h>
+#include <node/node.h>
+#include <node/node_buffer.h>
+#include <node/v8.h>
 
 extern "C" {
     #include "quark.h"
@@ -10,7 +10,7 @@ using namespace node;
 using namespace v8;
 
 Handle<Value> except(const char* msg) {
-    return ThrowException(Exception::Error(String::New(msg)));
+    return ThrowException(Exception::Error(v8::String::New(msg)));
 }
 
 Handle<Value> Digest(const Arguments& args) {
