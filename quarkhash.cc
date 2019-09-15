@@ -1,5 +1,8 @@
 #include <node.h>
 #include <node_buffer.h>
+
+
+#include "libplatform/libplatform.h"
 #include <v8.h>
 
 #include <memory>
@@ -23,21 +26,20 @@ void except(const char* msg) {
 }
 
 void Digest(const FunctionCallbackInfo<v8::Value>& args) {
-    Isolate* isolate = v8::Isolate::GetCurrent();
-    EscapableHandleScope scope(isolate);
+    printf("hello world! %d\n",args.Length());
     if (args.Length() < 1) {
         except("You must provide one argument.");
         return;
      }
     Local<Object> target = args[0]->ToObject();
-
+     printf("a");
     if(!Buffer::HasInstance(target)) {
         except("Argument should be a buffer object.");
         return;
     }
     char * input = Buffer::Data(target);
     char * output = new char[32];
-
+    printf("b");
     quark_hash(input, output);
 //    scope.Escape(Buffer::Data(output);
       args.GetReturnValue().Set(
@@ -45,13 +47,8 @@ void Digest(const FunctionCallbackInfo<v8::Value>& args) {
                               v8::NewStringType::kNormal).ToLocalChecked());
 }
 
-Local<Context> CreateShellContext(const FunctionCallbackInfo<v8::Value>& args) {
-  Isolate* isolate = Isolate::GetCurrent();
-  Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
-  global->Set(
-      String::NewFromUtf8(isolate, "digest", NewStringType::kNormal)
-          .ToLocalChecked(),
-      FunctionTemplate::New(isolate, Digest));
-}
+void Load(v8::Handle<v8::Object> exports) {
+  NODE_SET_METHOD(exports, "digest", Digest);
+} 
 
-NODE_MODULE(quarkhash,CreateShellContext)
+NODE_MODULE(method,Load);
